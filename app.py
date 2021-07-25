@@ -2,12 +2,13 @@ from mqtt import mqtt_iota,publish
 from price import price_miota
 from basic import account_manager
 from flask import Flask, jsonify, request, abort
+from flask_cors import CORS, cross_origin
 import iota_wallet as iw
 
 
 
 app = Flask(__name__)
-
+CORS(app)
 
 topicPub = 'v1/devices/iota/task'
 
@@ -23,7 +24,8 @@ def getBalance():
             "error": False,
             "data": {
                 "balance": valor['total']/1000000,
-                "usd": round(precio*(valor['total']/1000000), 2)
+                "usd": round(precio*(valor['total']/1000000), 2),
+                "conversion": round(precio, 2)
             }
         })
     except:
@@ -103,10 +105,6 @@ def sendTokens():
 
         transfer = iw.Transfer(
             amount=int('{0:_}'.format(int(request.json['cost']))),
-            # Direccion de la cuenta de gianfranco
-            # address='atoi1qr59srm9g4sddl6pv6hnyfsy9a65p4d6svmq63fqt9e3hx3hjg7qz8ttlp9',
-            # Direccion de la cuenta de Cesar
-            # address='atoi1qpmp9rltza98fys04ejd3df9lnuzygpkxcc0xdqm8xkcpy4zkjeyknue0w3',
             # Direccion de la cuenta de CuentaZ
             address='atoi1qrjj505wfzqt2n2wzpxe5vkjlktv3uvkemun8cz4eyc5utun26dlkvc6hek',
             # Direccion de la cuenta de CuentaR
@@ -119,10 +117,38 @@ def sendTokens():
         )
 
         node_response = cuenta_val.transfer(transfer)
+        #status_transfer = transfer.on_transfer_progress(node_response)
         print(f"mensaje: {request.json}\n")
-        # print(node_response )
+        #print(status_transfer )
 
         publish(topicPub, f"{request.json}", 0)
+
+        return jsonify({
+            "error": False,
+            "link": f"https://explorer.iota.org/testnet/message/{node_response['id']}"
+        })
+        
+    except Exception as e:
+        print(e)
+        return jsonify({
+            "error": True,
+            "message": "Has ocurred an error"
+        })
+
+@app.route('/return-tokens')
+def returnTokens():
+    try:
+        cuenta_val = account_manager("CuentaZ")
+        valor = cuenta_val.balance()
+        transfer = iw.Transfer(
+            amount=int('{0:_}'.format(int(valor['total']))),
+            address='atoi1qz7xrvchj6kjhk5p7wndlw2aj50wesqhaezc2npzvvch4csvwzz3j8mqdyk',
+            remainder_value_strategy='ReuseAddress',
+        )
+
+        node_response = cuenta_val.transfer(transfer)
+        #status_transfer = transfer.on_transfer_progress(node_response)
+        # print(f"mensaje: {request.json}\n")
 
         return jsonify({
             "error": False,
@@ -146,3 +172,4 @@ def prueba():
 
 if __name__ == '__main__':
     app.run(debug=True, port=4000)
+    #host="0.0.0.0"

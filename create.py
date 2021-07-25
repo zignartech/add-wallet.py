@@ -21,15 +21,19 @@ account_manager.set_stronghold_password(STRONGHOLD_PASSWORD)
 
 # general Tangle specific options
 client_options = {
-    "nodes": [
-        {
+    "primary_node": {
             "url": "https://api.lb-0.testnet.chrysalis2.com",
             "auth": None,
             "disabled": False
-        }
-    ],
+        },
+    "primary_pow_node": {
+            "url": "https://api.lb-0.testnet.chrysalis2.com",
+            "auth": None,
+            "disabled": False
+        },
     "local_pow": False,
-    'node_sync_interval': 15000, # in milliseconds
+    "request_timeout": 10000,
+    'node_sync_interval': 10000, # in milliseconds
 }
 
 account = account_manager.get_account("CuentaZ")
