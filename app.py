@@ -1,8 +1,9 @@
-from mqtt import mqtt_iota,publish
+from mqtt import publish
 from price import price_miota
 from basic import account_manager
 from flask import Flask, jsonify, request, abort
 from flask_cors import CORS, cross_origin
+import datetime
 import iota_wallet as iw
 
 
@@ -31,7 +32,7 @@ def getBalance():
     except:
         return jsonify({
             "error": True,
-            "message": "Has ocurred an error"
+            "message": "An error has occurred"
         })
 
 
@@ -54,7 +55,7 @@ def listAddress():
     except:
         return jsonify({
             "error": True,
-            "message": "Has ocurred an error"
+            "message": "An error has occurred"
         })
 
 @app.route('/transactions', methods=['GET'])
@@ -74,7 +75,7 @@ def listTransfers():
         
         for ac in reversed(transactions):
             list_t.append({
-                "id":f"https://explorer.iota.org/testnet/message/{ ac['id']}",
+                "id":f"{ac['id']}",
                 "amount": ac['payload']['transaction'][0]['essence']['regular']['value']/1000000,
                 "date": ac['timestamp'],
                 "status": ac['payload']['transaction'][0]['essence']['regular']['incoming']
@@ -95,14 +96,22 @@ def listTransfers():
         print(e)
         return jsonify({
             "error": True,
-            "message": "Has ocurred an error"
+            "message": "An error has occurred"
         })
  
 @app.route('/send-tokens', methods=['POST'])
 def sendTokens():
     try:
         cuenta_val = account_manager("CuentaR")
-
+        valor = cuenta_val.balance()
+        #print(valor['total'])
+        if valor['total'] < int(request.json['cost']):
+            return jsonify({
+            "error": True,
+            "message": "Not enough IOTAS"
+            })
+        prueba = [task['name'] for task in request.json['rover']['tasks']]
+        timestamp = datetime.datetime.fromtimestamp(int(request.json['date']))
         transfer = iw.Transfer(
             amount=int('{0:_}'.format(int(request.json['cost']))),
             # Direccion de la cuenta de CuentaZ
@@ -112,27 +121,35 @@ def sendTokens():
             remainder_value_strategy='ReuseAddress',
             indexation={
                 'index': "Zignar Technologies".encode(),
-                'data': f"{request.json}".encode()
+                #'data': f"{request.json}".encode()
+                'data': f"""Device: {request.json['rover']['name']}
+task: {prueba}
+location:  {request.json['rover']['location']}
+cost: {request.json['cost']}
+reference: {request.json['reference']}
+farm_sections_involved: {request.json['farm_sections_involved']}
+banner: {request.json['banner']}
+date: {timestamp.strftime('%Y-%m-%d %H:%M:%S')}""".encode()
             }
         )
 
         node_response = cuenta_val.transfer(transfer)
-        #status_transfer = transfer.on_transfer_progress(node_response)
+        #on_confirmation_state_change(callback)
         print(f"mensaje: {request.json}\n")
-        #print(status_transfer )
+        print(node_response)
 
         publish(topicPub, f"{request.json}", 0)
 
         return jsonify({
             "error": False,
-            "link": f"https://explorer.iota.org/testnet/message/{node_response['id']}"
+            "link": f"{node_response['id']}"
         })
         
     except Exception as e:
         print(e)
         return jsonify({
             "error": True,
-            "message": "Has ocurred an error"
+            "message": "An error has occurred"
         })
 
 @app.route('/return-tokens')
@@ -140,6 +157,12 @@ def returnTokens():
     try:
         cuenta_val = account_manager("CuentaZ")
         valor = cuenta_val.balance()
+        #print(valor['total'])
+        if valor['total'] == 0:
+            return jsonify({
+            "error": False,
+            "message": "Not enough IOTAS"
+            })
         transfer = iw.Transfer(
             amount=int('{0:_}'.format(int(valor['total']))),
             address='atoi1qz7xrvchj6kjhk5p7wndlw2aj50wesqhaezc2npzvvch4csvwzz3j8mqdyk',
@@ -152,22 +175,31 @@ def returnTokens():
 
         return jsonify({
             "error": False,
-            "link": f"https://explorer.iota.org/testnet/message/{node_response['id']}"
+            "link": f"{node_response['id']}"
         })
         
     except Exception as e:
         print(e)
         return jsonify({
             "error": True,
-            "message": "Has ocurred an error"
+            "message": "An error has occurred"
         })
 
 @app.route('/prueba', methods=['POST'])
 def prueba():
     prueba = [task['name'] for task in request.json['rover']['tasks']]
+    timestamp = datetime.datetime.fromtimestamp(int(request.json['date']))
         #print(task['name'])
     #print(prueba)
-    print({f"deviceId: {request.json['rover']['name']}, task: {prueba}"})
+    #print({f"deviceId: {request.json['rover']['name']}, task: {prueba}"})
+    print(f"""Device: {request.json['rover']['name']}
+task: {prueba}
+location:  {request.json['rover']['location']}
+cost: {request.json['cost']}
+reference: {request.json['reference']}
+farm_sections_involved: {request.json['farm_sections_involved']}
+banner: {request.json['banner']}
+date: {timestamp.strftime('%Y-%m-%d %H:%M:%S')}""")
     return "aea"
 
 if __name__ == '__main__':
