@@ -18,6 +18,10 @@ def getBalance():
     try:
         precio = price_miota()
         cuenta_val = account_manager("CuentaR")
+        
+        print('Syncing...')
+        synced = cuenta_val.sync().execute()
+        
         print("Total balance:")
         valor = cuenta_val.balance()
 
@@ -34,14 +38,6 @@ def getBalance():
             "error": True,
             "message": "An error has occurred"
         })
-
-
-# @app.route('/transactions/last')
-# def lastTransfer():
-#    cuenta_val = account_manager("Cesar")
-#    ac = cuenta_val.list_messages()
-#    return jsonify({"message": ac[-1]['id'], "confirmation status": ac[-1]['confirmed'],
-#                    "value": ac[-1]['payload']['transaction'][0]['essence']['regular']['value']})
 
 @app.route('/address')
 def listAddress():
@@ -67,12 +63,14 @@ def listTransfers():
         transactions = None 
         
         if(status is None):
+            print('Syncing...')
+            synced = cuenta_val.sync().execute()
             transactions = cuenta_val.list_messages()
         else:
             if not (status == 'Received' or status == 'Sent'):
                 abort(404)
             transactions = cuenta_val.list_messages(message_type=status)
-        
+            
         for ac in reversed(transactions):
             list_t.append({
                 "id":f"{ac['id']}",
@@ -81,7 +79,6 @@ def listTransfers():
                 "status": ac['payload']['transaction'][0]['essence']['regular']['incoming']
             })
 
-        #resultado = [count for count in reversed(list_t)]
         if len(list_t)<10:
             lista = list_t
         else:
@@ -104,14 +101,16 @@ def sendTokens():
     try:
         cuenta_val = account_manager("CuentaR")
         valor = cuenta_val.balance()
-        #print(valor['total'])
+
         if valor['total'] < int(request.json['cost']):
             return jsonify({
             "error": True,
             "message": "Not enough IOTAS"
             })
+
         prueba = [task['name'] for task in request.json['rover']['tasks']]
         timestamp = datetime.datetime.fromtimestamp(int(request.json['date']))
+        
         transfer = iw.Transfer(
             amount=int('{0:_}'.format(int(request.json['cost']))),
             # Direccion de la cuenta de CuentaZ
@@ -134,11 +133,10 @@ date: {timestamp.strftime('%Y-%m-%d %H:%M:%S')}""".encode()
         )
 
         node_response = cuenta_val.transfer(transfer)
-        #on_confirmation_state_change(callback)
         print(f"mensaje: {request.json}\n")
         print(node_response)
 
-        publish(topicPub, f"{request.json}", 0)
+        #publish(topicPub, f"{request.json}", 0)
 
         return jsonify({
             "error": False,
@@ -170,8 +168,6 @@ def returnTokens():
         )
 
         node_response = cuenta_val.transfer(transfer)
-        #status_transfer = transfer.on_transfer_progress(node_response)
-        # print(f"mensaje: {request.json}\n")
 
         return jsonify({
             "error": False,
@@ -185,23 +181,12 @@ def returnTokens():
             "message": "An error has occurred"
         })
 
-@app.route('/prueba', methods=['POST'])
+@app.route('/prueba')
 def prueba():
-    prueba = [task['name'] for task in request.json['rover']['tasks']]
-    timestamp = datetime.datetime.fromtimestamp(int(request.json['date']))
-        #print(task['name'])
-    #print(prueba)
-    #print({f"deviceId: {request.json['rover']['name']}, task: {prueba}"})
-    print(f"""Device: {request.json['rover']['name']}
-task: {prueba}
-location:  {request.json['rover']['location']}
-cost: {request.json['cost']}
-reference: {request.json['reference']}
-farm_sections_involved: {request.json['farm_sections_involved']}
-banner: {request.json['banner']}
-date: {timestamp.strftime('%Y-%m-%d %H:%M:%S')}""")
+
+    publish(topicPub, f"{request.json}", 0)
     return "aea"
 
-if __name__ == '__main__':
-    app.run(debug=True, port=4000)
-    #host="0.0.0.0"
+# if __name__ == '__main__':
+#     app.run(debug=True, port=4000)
+#     #host="0.0.0.0"

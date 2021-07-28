@@ -25,15 +25,7 @@ def account_manager(user):
     account = account_manager.get_account(user)
     print(f'Account: {account.alias()}')
 
-    # Always sync before doing anything with the account
-    print('Syncing...')
-    synced = account.sync().execute()
-
     return account
-    # get total balance for the account
-    #print("Total balance:")
-    #print(account.balance())
-#
-    #print("Balance per individual addresses:")
-    #print(account.addresses())
+
+
 

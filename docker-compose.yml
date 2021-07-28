@@ -1,0 +1,8 @@
+version: '3.7'
+services:
+    api-wallet:
+        container_name: api-wallet
+        build:
+            context: .
+        ports: 
+            - "4000:5000"
