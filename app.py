@@ -13,6 +13,23 @@ CORS(app)
 
 topicPub = 'v1/devices/iota/task'
 
+@app.route('/sync')
+def sync():
+    try:
+        cuenta_val = account_manager("CuentaR")
+        print('Syncing...')
+        synced = cuenta_val.sync().execute()
+        return jsonify({
+            "error": False,
+            "status": "synced"
+        })
+    except:
+        return jsonify({
+            "error": True,
+            "message": "An error has occurred"
+        })
+
+
 @app.route('/balance')
 def getBalance():
     try:
@@ -63,8 +80,6 @@ def listTransfers():
         transactions = None 
         
         if(status is None):
-            print('Syncing...')
-            synced = cuenta_val.sync().execute()
             transactions = cuenta_val.list_messages()
         else:
             if not (status == 'Received' or status == 'Sent'):
@@ -138,9 +153,12 @@ date: {timestamp.strftime('%Y-%m-%d %H:%M:%S')}""".encode()
 
         #publish(topicPub, f"{request.json}", 0)
 
+        valor2 = valor['total'] - node_response['payload']['transaction'][0]['essence']['regular']['value']
+
         return jsonify({
             "error": False,
-            "link": f"{node_response['id']}"
+            "link": f"{node_response['id']}",
+            "balance": valor2
         })
         
     except Exception as e:
@@ -187,6 +205,6 @@ def prueba():
     publish(topicPub, f"{request.json}", 0)
     return "aea"
 
-# if __name__ == '__main__':
-#     app.run(debug=True, port=4000)
+if __name__ == '__main__':
+    app.run(debug=True, port=4000)
 #     #host="0.0.0.0"
