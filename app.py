@@ -172,6 +172,7 @@ date: {timestamp.strftime('%Y-%m-%d %H:%M:%S')}""".encode()
 def returnTokens():
     try:
         cuenta_val = account_manager("CuentaZ")
+        synced = cuenta_val.sync().execute()
         valor = cuenta_val.balance()
         #print(valor['total'])
         if valor['total'] == 0:
