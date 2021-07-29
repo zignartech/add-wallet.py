@@ -1,3 +1,4 @@
+# Conventional Commit tool and Jira Integration
 ## Using the command line tool
 
 ### If your repo is [Commitizen-friendly]:
