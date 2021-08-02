@@ -46,7 +46,6 @@ def getBalance():
             "error": False,
             "data": {
                 "balance": valor['total']/1000000,
-                "usd": round(precio*(valor['total']/1000000), 2),
                 "conversion": round(precio, 2)
             }
         })
@@ -78,7 +77,6 @@ def listTransfers():
         list_t = []
         status = request.args.get('status')
         transactions = None 
-        
         if(status is None):
             transactions = cuenta_val.list_messages()
         else:
@@ -90,7 +88,7 @@ def listTransfers():
             list_t.append({
                 "id":f"{ac['id']}",
                 "amount": ac['payload']['transaction'][0]['essence']['regular']['value']/1000000,
-                "date": ac['timestamp'],
+                "date": ac['timestamp']*1000,
                 "status": ac['payload']['transaction'][0]['essence']['regular']['incoming']
             })
 
@@ -114,6 +112,7 @@ def listTransfers():
 @app.route('/send-tokens', methods=['POST'])
 def sendTokens():
     try:
+        print(f"mensaje: {request.json}\n")
         cuenta_val = account_manager("CuentaR")
         valor = cuenta_val.balance()
 
@@ -123,8 +122,8 @@ def sendTokens():
             "message": "Not enough IOTAS"
             })
 
-        prueba = [task['name'] for task in request.json['rover']['tasks']]
-        timestamp = datetime.datetime.fromtimestamp(int(request.json['date']))
+        #prueba = [task['name'] for task in request.json['rover']['tasks']]
+        timestamp = datetime.datetime.fromtimestamp(int(request.json['dateUTC']))
         
         transfer = iw.Transfer(
             amount=int('{0:_}'.format(int(request.json['cost']))),
@@ -137,13 +136,13 @@ def sendTokens():
                 'index': "Zignar Technologies".encode(),
                 #'data': f"{request.json}".encode()
                 'data': f"""Device: {request.json['rover']['name']}
-task: {prueba}
+task: {request.json['rover']['tasks']}
 location:  {request.json['rover']['location']}
 cost: {request.json['cost']}
 reference: {request.json['reference']}
 farm_sections_involved: {request.json['farm_sections_involved']}
 banner: {request.json['banner']}
-date: {timestamp.strftime('%Y-%m-%d %H:%M:%S')}""".encode()
+dateGMT: {request.json['dateGMT']}""".encode()
             }
         )
 
@@ -158,7 +157,7 @@ date: {timestamp.strftime('%Y-%m-%d %H:%M:%S')}""".encode()
         return jsonify({
             "error": False,
             "link": f"{node_response['id']}",
-            "balance": valor2
+            "balance": valor2/1000000
         })
         
     except Exception as e:
@@ -206,6 +205,6 @@ def prueba():
     publish(topicPub, f"{request.json}", 0)
     return "aea"
 
-# if __name__ == '__main__':
-#     app.run(debug=True, port=4000)
+if __name__ == '__main__':
+    app.run(debug=True, port=4000, host="0.0.0.0")
 #     #host="0.0.0.0"
