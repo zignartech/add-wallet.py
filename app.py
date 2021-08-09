@@ -130,7 +130,7 @@ def sendTokens():
             "message": "Not enough IOTAS"
             })
 
-        prueba = [task['name'] for task in request.json['rover']['tasks']]
+        #prueba = [task['name'] for task in request.json['rover']['tasks']]
         #timestamp = datetime.datetime.fromtimestamp(int(request.json['dateUTC']))
         
         transfer = iw.Transfer(
@@ -161,10 +161,10 @@ dateGMT: {request.json['dateGMT']}""".encode()
         print(node_response)
 
         if request.json['mode'] == "send":
-            publish(topicPub1, f"Task: {prueba}", 0)
+            publish(topicPub1, f"Task: {request.json['rover']['tasks']}", 0)
             print("\nsend")
         else:
-            publish(topicPub2, f"Task: {prueba}", 0)  
+            publish(topicPub2, f"Task: {request.json['rover']['tasks']}", 0)  
             print("\ndemo")  
 
         valor2 = valor['total'] - node_response['payload']['transaction'][0]['essence']['regular']['value']
@@ -224,5 +224,5 @@ def returnTokens():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=4000, host="0.0.0.0")
+    app.run(debug=False, port=4000, host="0.0.0.0")
 #     #host="0.0.0.0"
